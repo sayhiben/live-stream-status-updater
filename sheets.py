@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 from googleapiclient.discovery import build
@@ -52,6 +53,33 @@ def get_urls(service, spreadsheet_id):
     if not values:
         raise Exception('No data found.')
     return values
+
+
+def update_status(service, sheet_id, url, status):
+    new_status = "Live" if status else "Offline"
+    # TODO: This is like the worst way to do this
+    URL_RANGE_NAME = 'Livestream Info!C1:D300'
+    sheet = service.spreadsheets()
+    current_statuses = [pair for pair in
+                        sheet.values().get(spreadsheetId=sheet_id,
+                                           range=URL_RANGE_NAME,).execute()['values']
+                        if pair]
+
+    current_row = 0
+    for (sheet_status, sheet_url) in current_statuses:
+        current_row += 1
+        if url == sheet_url:
+            if new_status != sheet_status:
+                body = {"values": [[new_status]]}
+                print("Updating {} at D{} to {}".format(
+                    url, current_row, new_status))
+                sheet.values().update(
+                    spreadsheetId=sheet_id, range=f"Livestream Info!C{current_row}", body=body, valueInputOption="USER_ENTERED",
+                ).execute()
+                # update
+            return sheet_status == "Live"
+    print("URL {} not found in sheet".format(url))
+    raise Exception("URL {} not found in sheet".format(url))
 
 
 def main():

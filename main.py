@@ -58,10 +58,13 @@ def fetch_social_account_urls(sheets_service, sheet_id):
     return sheets.get_urls(sheets_service, sheet_id)
 
 
-def update_live_status(social_account_url, status):
+def update_live_status(sheets_service, sheet_id, social_account_url, status):
+    old_status = sheets.update_status(
+        sheets_service, sheet_id, social_account_url, status)
+    return old_status
+
     # TODO: Accept a social account url and a status
     # TODO: Update the status in the CSV/google sheet. consider also updating a "last checked" or "last live" timestamp in the sheet (you may need to add one
-    pass
 
 
 # Actually run the program:
@@ -83,7 +86,7 @@ for url in urls:
 updated_count = 0
 for (url, status) in updated_statuses.items():
     try:
-        update_live_status(url, status)
+        update_live_status(sheets_service, args.sheetid, url, status)
         updated_count += 1
     except:
         print(f"Could not update status for {url}. Skipping.")
