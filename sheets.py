@@ -10,6 +10,50 @@ from google.auth.transport.requests import Request
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 
+class Sheet():
+    INFO_RANGE_NAME = 'Livestream Info!C1:D300'
+    service = None
+    sheet_id = None
+    _cache = None
+
+    def __init__(self, sheetid):
+        self.service = get_service()
+        self.sheet_id = sheetid
+
+    def urls(self):
+        return [r[1] for r in self._retrieve_sheet() if r and len(r) > 1]
+
+    def update_status(self, url, status):
+        new_status = "Live" if status else "Offline"
+        # TODO: This is like the worst way to do this
+        current_statuses = self._retrieve_sheet()
+        for (row_id, row) in enumerate(current_statuses):
+            if not row:
+                continue
+            sheet_status, sheet_url = row
+            if url == sheet_url:
+                if new_status != sheet_status:
+                    self._set_cell_value(f"C{row_id+1}", new_status)
+                return sheet_status == "Live"
+        print("URL {} not found in sheet".format(url))
+        raise Exception("URL {} not found in sheet".format(url))
+
+    def _set_cell_value(self, cell, value):
+        print(f"Setting {cell} to {value}")
+        return self.service.spreadsheets().values().update(
+            spreadsheetId=self.sheet_id,
+            range=f"Livestream Info!{cell}", body={"values": [[value]]}, valueInputOption="USER_ENTERED",
+        ).execute()
+
+    def _retrieve_sheet(self):
+        if not self._cache:
+            sheet = self.service.spreadsheets()
+            result = sheet.values().get(spreadsheetId=self.sheet_id,
+                                        range=Sheet.INFO_RANGE_NAME).execute()
+            self._cache = result['values']
+        return self._cache
+
+
 def get_service(credentials_path="credentials.json", token_path="token.pickle"):
     creds = None
     if os.path.exists(token_path):
@@ -32,63 +76,13 @@ def get_service(credentials_path="credentials.json", token_path="token.pickle"):
     return service
 
 
-def get_urls(service, spreadsheet_id):
-    # Takes: a spreadsheet_id (the long string in the URL),
-    # Returns: a list of strings for each non-empty cell in the row.
-    # Largely copy-pasted from the quickstart.py example
-    # TODO: Will need to be updated if the information moves to a different column
-    SAMPLE_SPREADSHEET_ID = spreadsheet_id
-    SAMPLE_RANGE_NAME = 'Livestream Info!D2:D300'
-
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    # Call the Sheets API
-    sheet = service.spreadsheets()
-    result = sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID,
-                                range=SAMPLE_RANGE_NAME).execute()
-
-    values = [url[0] for url in result.get('values', []) if url]
-
-    if not values:
-        raise Exception('No data found.')
-    return values
-
-
-def update_status(service, sheet_id, url, status):
-    new_status = "Live" if status else "Offline"
-    # TODO: This is like the worst way to do this
-    URL_RANGE_NAME = 'Livestream Info!C1:D300'
-    sheet = service.spreadsheets()
-    current_statuses = [pair for pair in
-                        sheet.values().get(spreadsheetId=sheet_id,
-                                           range=URL_RANGE_NAME,).execute()['values']
-                        if pair]
-
-    current_row = 0
-    for (sheet_status, sheet_url) in current_statuses:
-        current_row += 1
-        if url == sheet_url:
-            if new_status != sheet_status:
-                body = {"values": [[new_status]]}
-                print("Updating {} at D{} to {}".format(
-                    url, current_row, new_status))
-                sheet.values().update(
-                    spreadsheetId=sheet_id, range=f"Livestream Info!C{current_row}", body=body, valueInputOption="USER_ENTERED",
-                ).execute()
-                # update
-            return sheet_status == "Live"
-    print("URL {} not found in sheet".format(url))
-    raise Exception("URL {} not found in sheet".format(url))
-
-
 def main():
     import sys
     if len(sys.argv) < 2:
         print("Required arguments: <GOOGLE_SHEET_ID>")
         sys.exit(1)
-    service = get_service()
-    print(get_urls(service, sys.argv[1]))
+    sheet = Sheet(sheetid=sys.argv[1])
+    print(sheet.urls())
 
 
 if __name__ == '__main__':

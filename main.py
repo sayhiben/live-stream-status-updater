@@ -54,13 +54,12 @@ def check_social_account_live_status(social_account_url):
     return status
 
 
-def fetch_social_account_urls(sheets_service, sheet_id):
-    return sheets.get_urls(sheets_service, sheet_id)
+def fetch_social_account_urls(sheet):
+    return sheet.urls()
 
 
-def update_live_status(sheets_service, sheet_id, social_account_url, status):
-    old_status = sheets.update_status(
-        sheets_service, sheet_id, social_account_url, status)
+def update_live_status(sheet, social_account_url, status):
+    old_status = sheet.update_status(social_account_url, status)
     return old_status
 
     # TODO: Accept a social account url and a status
@@ -70,8 +69,9 @@ def update_live_status(sheets_service, sheet_id, social_account_url, status):
 # Actually run the program:
 args = parse_args()
 
+sheet = sheets.Sheet(args.sheetid)
 sheets_service = sheets.get_service()
-urls = fetch_social_account_urls(sheets_service, args.sheetid)
+urls = fetch_social_account_urls(sheet)
 print(f"Updating {len(urls)} social media accounts")
 
 # Loop through urls and collect status info
@@ -86,7 +86,7 @@ for url in urls:
 updated_count = 0
 for (url, status) in updated_statuses.items():
     try:
-        update_live_status(sheets_service, args.sheetid, url, status)
+        update_live_status(sheet, url, status)
         updated_count += 1
     except:
         print(f"Could not update status for {url}. Skipping.")
