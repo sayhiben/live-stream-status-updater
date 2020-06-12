@@ -1,8 +1,36 @@
+import re
+
+def check_facebook_live_status(url):
+    # TODO: Scrape FB page/profile and determine if it's currently live streaming
+    return False
+
+def check_periscope_live_status(url):
+    # TODO: Scrape Periscope profile and determine if it's currently live streaming
+    return False
+
+def check_twitch_live_status(url):
+    # TODO: Scrape Twitch page and return a boolean if it's currently live streaming
+    return False
+
+def check_instagram_live_status(url):
+    # TODO: Scrape IG page and return a boolean if it's currently live streaming
+    return False
+
+PLATFORM_MAPPING = [
+    (re.compile('.*facebook\.com.*', re.IGNORECASE), check_facebook_live_status),
+    (re.compile('.*periscope\.tv.*', re.IGNORECASE), check_periscope_live_status),
+    (re.compile('.*pscp\.tv.*', re.IGNORECASE), check_periscope_live_status),
+    (re.compile('.*instagram\.com.*', re.IGNORECASE), check_instagram_live_status),
+    (re.compile('.*twitch\.tv.*', re.IGNORECASE), check_twitch_live_status),
+]
+def get_status_checker(url):
+    for regexp, fn in PLATFORM_MAPPING:
+        if regexp.match(url):
+            return fn
 
 def check_social_account_live_status(social_account_url):
-    # TODO: Accept a social_account_url, scrape the page and determine if the social account is currently live streaming
-    status = False
-    # TODO: return a boolean of whether or not the social account is currently live streaming
+    status_checker = get_status_checker(social_account_url)
+    status = status_checker(url)
     return status
 
 def fetch_social_account_urls():
