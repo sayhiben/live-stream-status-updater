@@ -50,7 +50,7 @@ def get_status_checker(url):
 
 def check_social_account_live_status(social_account_url):
     status_checker = get_status_checker(social_account_url)
-    status = status_checker(url)
+    status = status_checker(social_account_url)
     return status
 
 
@@ -66,29 +66,34 @@ def update_live_status(sheet, social_account_url, status):
     # TODO: Update the status in the CSV/google sheet. consider also updating a "last checked" or "last live" timestamp in the sheet (you may need to add one
 
 
-# Actually run the program:
-args = parse_args()
+def update_sheet(sheetid):
+    # main function to update google sheet
+    sheet = sheets.Sheet(sheetid)
+    sheets_service = sheets.get_service()
+    urls = fetch_social_account_urls(sheet)
+    print(f"Updating {len(urls)} social media accounts")
 
-sheet = sheets.Sheet(args.sheetid)
-sheets_service = sheets.get_service()
-urls = fetch_social_account_urls(sheet)
-print(f"Updating {len(urls)} social media accounts")
+    # Loop through urls and collect status info
+    updated_statuses = {}
+    for url in urls:
+        try:
+          status = check_social_account_live_status(url)
+          updated_statuses[url] = status
+        except TypeError:
+            print(f"Could not determine status for {url}. Skipping.")
 
-# Loop through urls and collect status info
-updated_statuses = {}
-for url in urls:
-    try:
-        status = check_social_account_live_status(url)
-        updated_statuses[url] = status
-    except:
-        print(f"Could not determine status for {url}. Skipping.")
+    updated_count = 0
+    for (url, status) in updated_statuses.items():
+        try:
+            update_live_status(sheet, url, status)
+            updated_count += 1
+        except:
+            print(f"Could not update status for {url}. Skipping.")
 
-updated_count = 0
-for (url, status) in updated_statuses.items():
-    try:
-        update_live_status(sheet, url, status)
-        updated_count += 1
-    except:
-        print(f"Could not update status for {url}. Skipping.")
+    print(f"Finished updating {updated_count} social media accounts")
 
-print(f"Finished updating {updated_count} social media accounts")
+
+if __name__ == "__main__":
+    # Parse args and run main update_sheet function
+    args = parse_args()
+    update_sheet(args.sheetid)
