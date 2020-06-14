@@ -1,4 +1,6 @@
 import argparse
+import base64
+import json
 import re
 
 import sheets
@@ -91,6 +93,16 @@ def update_sheet(sheetid):
             print(f"Could not update status for {url}. Skipping.")
 
     print(f"Finished updating {updated_count} social media accounts")
+
+
+def gcloud_pubsub(event, context):
+    """
+    Responds to GCloud pubsub messages
+    Used for triggering update_sheet from a Google Cloud function
+    """
+    pubsub_json = base64.b64decode(event['data']).decode('utf-8')
+    pubsub_message = json.loads(pubsub_json)
+    update_sheet(pubsub_message['sheetid'])
 
 
 if __name__ == "__main__":
