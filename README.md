@@ -12,6 +12,10 @@ Run `python3 -m pip install -r requirements.txt`. Or, on windows, try `py -m pip
 
 ### Configuration
 
+#### Google Sheets
 To enable authentication to Google Sheets, you need to enable the Sheets API here by obtaining a `credentials.json` file and putting it in the root of this repository. Instructions are available here: [https://developers.google.com/sheets/api/quickstart/python]. Click the `Enable Google Sheets API` button, accept the default of `Desktop App`, and click `Download Client Configuration`.
 
 The first time you run the program, a webpage will open in your browser, asking you to authorize the application you just created to edit your data on Google Sheets. It will be named `Quickstart`. Accept these permissions - authorization will be stored in `token.pickle` for future use.
+
+#### Twitch.tv
+To determine the status of Twitch streamers, [you must obtain a Twitch Developer Application Client ID and Client Secret.](https://dev.twitch.tv/docs/authentication#registration) Pass these values in as `--twitch-client-id` and `--twitch-client-secret`

@@ -41,8 +41,7 @@ def check_twitch_live_status(url):
     client_secret = args.twitch_client_secret
     if not (client_id and client_secret):
         log.warning(
-            f"The URL '{url}' cannot be fetched. Please define TWITCH_CLIENT_ID " \
-            "and TWITCH_CLIENT_SECRET in your environment"
+            f"The URL '{url}' cannot be fetched. Please pass --twitch-client-id and --twitch-client-secret. See Readme."
         )
         return False
 
