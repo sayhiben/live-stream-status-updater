@@ -2,8 +2,14 @@ import argparse
 import base64
 import json
 import re
+import os
+import logging
 
 import sheets
+from status_checkers import checkers
+
+log = logging.getLogger()
+args = None
 
 
 def parse_args():
@@ -11,8 +17,13 @@ def parse_args():
     parser.add_argument(
         "--sheetid", help="ID of the Google Sheet, like '1bx...ms'", required=True,
     )
-    args = parser.parse_args()
-    return args
+    parser.add_argument(
+        "--twitch-client-id", help="Twitch Dev. Application Client Id", required=False,
+    )
+    parser.add_argument(
+        "--twitch-client-secret", help="Twitch Dev. Application Client Secret", required=False,
+    )
+    return parser.parse_args()
 
 
 def check_facebook_live_status(url):
@@ -26,12 +37,25 @@ def check_periscope_live_status(url):
 
 
 def check_twitch_live_status(url):
-    # TODO: Scrape Twitch page and return a boolean if it's currently live streaming
-    return False
+    client_id = args.twitch_client_id
+    client_secret = args.twitch_client_secret
+    if not (client_id and client_secret):
+        log.warning(
+            f"The URL '{url}' cannot be fetched. Please pass --twitch-client-id and --twitch-client-secret. See Readme."
+        )
+        return False
+
+    checker = checkers.TwitchStatusChecker(client_id, client_secret)
+    return checker.check_status(url)
 
 
 def check_instagram_live_status(url):
     # TODO: Scrape IG page and return a boolean if it's currently live streaming
+    return False
+
+
+def check_youtube_live_status(url):
+    # TODO: Scrape YT page and return a boolean if it's currently live streaming
     return False
 
 
@@ -41,6 +65,7 @@ PLATFORM_MAPPING = [
     (re.compile('.*pscp\.tv.*', re.IGNORECASE), check_periscope_live_status),
     (re.compile('.*instagram\.com.*', re.IGNORECASE), check_instagram_live_status),
     (re.compile('.*twitch\.tv.*', re.IGNORECASE), check_twitch_live_status),
+    (re.compile('.*youtube\.com.*', re.IGNORECASE), check_youtube_live_status),
 ]
 
 
@@ -79,8 +104,8 @@ def update_sheet(sheetid):
     updated_statuses = {}
     for url in urls:
         try:
-          status = check_social_account_live_status(url)
-          updated_statuses[url] = status
+            status = check_social_account_live_status(url)
+            updated_statuses[url] = status
         except TypeError:
             print(f"Could not determine status for {url}. Skipping.")
 
